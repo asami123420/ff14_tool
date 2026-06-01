@@ -17,20 +17,34 @@
         🌓 切換亮暗配色
     </button>
 
-    <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent mb-2">
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent mb-4">
         潛水艇返航 自動計時器
     </h1>
     
-    <div class="flex gap-3 mb-6 flex-wrap justify-center">
-        <button id="auth-btn" onclick="requestNotificationPermission()" class="border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-900/30 text-xs px-4 py-2 rounded-lg text-emerald-400 transition flex items-center gap-2">
-            🔔 點擊開啟網頁通知提醒功能
-        </button>
-        <button onclick="playBeepNotification()" class="border border-zinc-700/40 bg-zinc-900/30 text-xs px-4 py-2 rounded-lg text-zinc-400 transition flex items-center gap-2 hover:bg-zinc-800/30">
-            🔊 測試音效
-        </button>
+    <div id="top-ctrl-panel" class="w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-4 mb-6 flex flex-wrap items-center justify-center lg:justify-between gap-4 shadow-md">
+        
+        <div class="flex flex-wrap gap-2.5 items-center justify-center">
+            <button id="auth-btn" onclick="requestNotificationPermission()" class="border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-900/30 text-xs px-4 py-2 rounded-lg text-emerald-400 transition flex items-center gap-2">
+                🔔 點擊開啟網頁通知提醒功能
+            </button>
+            <button id="test-sound-btn" onclick="playBeepNotification()" class="border border-zinc-700/40 bg-zinc-900/30 text-xs px-3 py-2 rounded-lg text-zinc-400 transition flex items-center gap-1.5 hover:bg-zinc-800/30 cursor-pointer whitespace-nowrap">
+                🔊 測試音效
+            </button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-4 flex-1 sm:flex-none">
+            <div class="flex items-center gap-1.5">
+                <select id="sound-type-preset" onchange="saveSoundSettings()" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 theme-input text-ellipsis overflow-hidden max-w-[180px] sm:max-w-none">
+                    <option value="standard">📡 標準雷達嗶嗶聲</option>
+                    <option value="alarm">🚨 緊急回港警報音</option>
+                    <option value="sonar">🎵 深海探測聲 Sonar</option>
+                </select>
+            </div>
+        </div>
+
     </div>
 
-    <div class="w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-6 mb-8 space-y-6 shadow-xl theme-panel">
+    <div id="main-panel-box" class="w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-6 mb-8 space-y-6 shadow-xl">
         <div class="space-y-4">
             <h3 class="text-sm font-bold text-emerald-500 flex items-center gap-2 theme-title-main">✍️ 新增潛水艇任務計時</h3>
             
@@ -41,7 +55,7 @@
                 </div>
                 <div>
                     <label class="text-xs text-zinc-400 block mb-1 font-medium theme-label">等級 (Lv)</label>
-                    <input type="number" id="manual-level" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 theme-input" placeholder="例如：100" min="1" max="100">
+                    <input type="number" id="manual-level" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 theme-input" placeholder="example：100" min="1" max="100">
                 </div>
             </div>
 
@@ -156,10 +170,21 @@
             } else {
                 updateThemeStyles('dark');
             }
+
+            // 讀取本地快取的音效設定
+            const savedSoundType = localStorage.getItem('sub_sound_type') || 'standard';
+            document.getElementById('sound-type-preset').value = savedSoundType;
+
             checkNotificationStatus();
             renderCards();
             setInterval(updateAllTimers, 1000);
         };
+
+        function saveSoundSettings() {
+            const soundType = document.getElementById('sound-type-preset').value;
+            localStorage.setItem('sub_sound_type', soundType);
+            playBeepNotification(); 
+        }
 
         function toggleTheme() {
             const isLight = document.body.classList.toggle('light-mode');
@@ -170,6 +195,7 @@
         }
 
         function updateThemeStyles(theme) {
+            const ctrlPanel = document.getElementById('top-ctrl-panel');
             const mainPanel = document.getElementById('main-panel-box');
             const labels = document.querySelectorAll('.theme-label');
             const inputs = document.querySelectorAll('.theme-input');
@@ -184,13 +210,22 @@
             const modalClose = document.querySelector('.theme-modal-close');
             const modalTitle = document.querySelector('.theme-modal-title');
             const optgroups = document.querySelectorAll('.theme-optgroup');
+            const testSoundBtn = document.getElementById('test-sound-btn');
+
+            // 🎨 【你可以修改這裡】自訂亮色模式下兩個主面板的背景色樣式
+            // 如果你想改成純白，請將 'bg-white' 改為你想換的 Tailwind 色碼（例如 'bg-amber-50' 或 'bg-zinc-100'）
+            const lightModeBgClass = "w-full max-w-2xl bg-white border border-slate-200 rounded-xl shadow-md";
 
             if (theme === 'light') {
                 if (toggleBtn) toggleBtn.className = "fixed top-4 right-4 z-50 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs px-3 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer dark-mode-btn";
                 if (modalBox) modalBox.className = "bg-white border border-slate-300 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 theme-modal-box";
                 if (modalClose) modalClose.className = "text-slate-400 hover:text-slate-800 text-lg cursor-pointer theme-modal-close";
                 if (modalTitle) modalTitle.className = "text-base font-bold text-slate-800 flex items-center gap-2 theme-modal-title";
-                if (mainPanel) mainPanel.className = "w-full max-w-2xl bg-white border border-slate-200 rounded-xl p-6 mb-8 space-y-6 shadow-md theme-panel";
+                
+                // 動態刷新亮色背景
+                if (ctrlPanel) ctrlPanel.className = `${lightModeBgClass} p-4 flex flex-wrap items-center justify-center lg:justify-between gap-4`;
+                if (mainPanel) mainPanel.className = `${lightModeBgClass} p-6 mb-8 space-y-6`;
+                if (testSoundBtn) testSoundBtn.className = "border border-slate-300 bg-slate-50 text-xs px-4 py-2 rounded-lg text-slate-700 transition flex items-center gap-2 hover:bg-slate-200/60 cursor-pointer";
                 
                 labels.forEach(l => l.className = "text-xs text-slate-700 font-bold block mb-1 theme-label");
                 titleMains.forEach(t => t.className = "text-sm font-bold text-slate-800 flex items-center gap-2 theme-title-main");
@@ -206,7 +241,9 @@
                 if (modalBox) modalBox.className = "bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 theme-modal-box";
                 if (modalClose) modalClose.className = "text-zinc-500 hover:text-white text-lg cursor-pointer theme-modal-close";
                 if (modalTitle) modalTitle.className = "text-base font-bold text-emerald-400 flex items-center gap-2 theme-modal-title";
-                if (mainPanel) mainPanel.className = "w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-6 mb-8 space-y-6 shadow-xl theme-panel";
+                if (ctrlPanel) ctrlPanel.className = "w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-4 flex flex-wrap items-center justify-center lg:justify-between gap-4 shadow-xl";
+                if (mainPanel) mainPanel.className = "w-full max-w-2xl bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-6 mb-8 space-y-6 shadow-xl";
+                if (testSoundBtn) testSoundBtn.className = "border border-zinc-700/40 bg-zinc-900/30 text-xs px-4 py-2 rounded-lg text-zinc-400 transition flex items-center gap-2 hover:bg-zinc-800/30 cursor-pointer";
 
                 labels.forEach(l => l.className = "text-xs text-zinc-400 block mb-1 theme-label");
                 titleMains.forEach(t => t.className = "text-sm font-bold text-emerald-400 flex items-center gap-2 theme-title-main");
@@ -236,13 +273,32 @@
         function playBeepNotification() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                [0, 0.15].forEach((delay) => {
+                const soundType = document.getElementById('sound-type-preset').value;
+
+                if (soundType === 'standard') {
+                    [0, 0.15].forEach((delay) => {
+                        const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+                        oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + delay);
+                        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime + delay); gainNode.gain.exponentialRampToValueAtTime(0.05, audioCtx.currentTime + delay + 0.1);
+                        oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
+                        oscillator.start(audioCtx.currentTime + delay); oscillator.stop(audioCtx.currentTime + delay + 0.12);
+                    });
+                } else if (soundType === 'alarm') {
+                    [0, 0.12, 0.24, 0.36].forEach((delay) => {
+                        const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+                        oscillator.type = 'square'; oscillator.frequency.setValueAtTime(660, audioCtx.currentTime + delay);
+                        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime + delay); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + 0.08);
+                        oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
+                        oscillator.start(audioCtx.currentTime + delay); oscillator.stop(audioCtx.currentTime + delay + 0.09);
+                    });
+                } else if (soundType === 'sonar') {
                     const oscillator = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-                    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + delay);
-                    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime + delay); gainNode.gain.exponentialRampToValueAtTime(0.05, audioCtx.currentTime + delay + 0.1);
+                    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(1100, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1050, audioCtx.currentTime + 0.4);
+                    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
                     oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
-                    oscillator.start(audioCtx.currentTime + delay); oscillator.stop(audioCtx.currentTime + delay + 0.12);
-                });
+                    oscillator.start(audioCtx.currentTime); oscillator.stop(audioCtx.currentTime + 0.8);
+                }
             } catch (e) { console.log("音效播放被阻擋"); }
         }
 
@@ -260,7 +316,7 @@
             if (!("Notification" in window)) return;
             Notification.requestPermission().then(permission => {
                 checkNotificationStatus();
-                if (permission === "granted") { new Notification("Submerge DiveClock", { body: "成功開啟工作列回港通知提醒功能！" }); }
+                if (permission === "granted") { new Notification("Submerge DiveClock", { body: "成功開啟網頁通知與潛水艇回港提醒功能！" }); }
             });
         }
 
@@ -345,24 +401,6 @@
             saveToStorage(); renderCards();
         }
 
-        // 資料上移順序調整
-        window.moveSubmarineUp = function(index) {
-            if (index <= 0) return;
-            const temp = submarines[index];
-            submarines[index] = submarines[index - 1];
-            submarines[index - 1] = temp;
-            saveToStorage(); renderCards();
-        };
-
-        // 資料下移順序調整
-        window.moveSubmarineDown = function(index) {
-            if (index >= submarines.length - 1) return;
-            const temp = submarines[index];
-            submarines[index] = submarines[index + 1];
-            submarines[index + 1] = temp;
-            saveToStorage(); renderCards();
-        };
-
         function exportDataFile() {
             if (submarines.length === 0) { alert("目前沒有任何紀錄！"); return; }
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ exportTime: Date.now(), submarines: submarines }, null, 4));
@@ -404,28 +442,18 @@
             submarineList.innerHTML = '';
             const isLight = document.body.classList.contains('light-mode');
             
-            submarines.forEach((sub, index) => {
+            submarines.forEach(sub => {
                 const card = document.createElement('div');
                 card.className = isLight 
-                    ? "bg-white border-2 border-slate-200 rounded-xl p-5 flex flex-col justify-between shadow-md relative text-slate-800"
-                    : "bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col justify-between shadow-lg relative text-zinc-300";
+                    ? "w-full max-w-2xl bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between shadow-md relative text-slate-800"
+                    : "w-full max-w-2xl bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col justify-between shadow-lg relative text-zinc-300";
                 
                 const nameColor = isLight ? "text-blue-900 hover:text-blue-700 border-blue-900/30" : "text-cyan-400 hover:text-cyan-300 border-cyan-400/30";
                 const textTimeColor = isLight ? "text-slate-600 font-medium" : "text-zinc-400";
-                
-                const orderBtnClass = isLight 
-                    ? "text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded px-1.5 py-0.5 text-[11px] transition cursor-pointer font-bold"
-                    : "text-zinc-500 hover:text-zinc-200 bg-zinc-950 hover:bg-zinc-800 rounded px-1.5 py-0.5 text-[11px] transition cursor-pointer font-bold";
-
-                const upBtnHtml = index === 0 ? '' : `<button onclick="moveSubmarineUp(${index})" class="${orderBtnClass}" title="向上移">▲</button>`;
-                const downBtnHtml = index === submarines.length - 1 ? '' : `<button onclick="moveSubmarineDown(${index})" class="${orderBtnClass}" title="向下移">▼</button>`;
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="flex gap-1">${upBtnHtml}${downBtnHtml}</div>
-                            <span id="name-display-${sub.id}" onclick="enableNameEdit(${sub.id}, '${sub.name.replace(/'/g, "\\'")}')" class="font-bold text-lg cursor-pointer border-b border-dashed ${nameColor}" title="點擊修改名字">${sub.name}</span>
-                        </div>
+                        <span id="name-display-${sub.id}" onclick="enableNameEdit(${sub.id}, '${sub.name.replace(/'/g, "\\'")}')" class="font-bold text-lg cursor-pointer border-b border-dashed ${nameColor}" title="點擊修改名字">${sub.name}</span>
                         <span class="text-amber-600 dark:text-amber-500 font-mono font-bold text-xl" id="timer-${sub.id}">--:--:--</span>
                     </div>
                     
